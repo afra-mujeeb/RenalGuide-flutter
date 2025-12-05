@@ -1,19 +1,59 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:renalguide/Caretaker/login.dart';
 
-class Registerscreen extends StatelessWidget {
-  const Registerscreen({super.key});
+
+String baseurl='http://192.168.1.105:5000';
+Dio dio = Dio();
+class Registerscreen extends StatefulWidget {
+  Registerscreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final TextEditingController username = TextEditingController();
+  State<Registerscreen> createState() => _RegisterscreenState();
+}
+
+class _RegisterscreenState extends State<Registerscreen> {
+  final TextEditingController username = TextEditingController();
+
     final TextEditingController password = TextEditingController();
+
     final TextEditingController age = TextEditingController();
+
     final TextEditingController phoneNumber = TextEditingController();
-    final TextEditingController sex = TextEditingController();
+
+    // final TextEditingController sex = TextEditingController();
+
     final TextEditingController email = TextEditingController();
 
     final formKey = GlobalKey<FormState>();
+
+    String? selectedgender;
+
+  Future<void> _register(context) async {
+
+    Map<String, dynamic> data = {
+      'name':username.text,
+      'username':email.text,
+      'password':password.text,
+      'age':age.text,
+      'phonenumber':phoneNumber.text,
+      'sex':selectedgender,
+      'email':email.text,
+      
+    };
+    try {
+     final response = await dio.post('$baseurl/UserReg_api' , data:data);
+     if (response.statusCode==200||response.statusCode==201) {
+      Navigator.pop(context);
+     }
+    } catch(e) {
+      print(e);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    
 
     return Scaffold(
       backgroundColor: const Color(0xFFD6FFC1), // Updated soft green background
@@ -102,13 +142,35 @@ class Registerscreen extends StatelessWidget {
                     isLabelBold: true,
                   ),
 
-                  buildField(
-                    controller: sex,
-                    label: "Sex",
-                    hint: "Enter your gender",
-                    icon: Icons.group,
-                    isLabelBold: true,
-                  ),
+                  // buildField(
+                  //   controller: sex,
+                  //   label: "Sex",
+                  //   hint: "Enter your gender",
+                  //   icon: Icons.group,
+                  //   isLabelBold: true,
+                  // ),
+                  DropdownButtonFormField(
+                    validator: (value) {
+              if (value == null || value.isEmpty) {
+                return "This field is required";
+              }
+              return null;
+            },
+            decoration: InputDecoration(
+              hintText: 'Select a gender',
+              filled: true,
+              fillColor: const Color(0xFFF5F7F9),
+              prefixIcon: Icon(Icons.person, color: Colors.grey),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+                    items: ['Male', 'Female'].map((e)=>DropdownMenuItem(child: Text(e),value: e,)).toList(), onChanged: (value){
+                    setState(() {
+                      selectedgender=value;
+                    });
+                  }),
 
                   const SizedBox(height: 25),
 
@@ -126,11 +188,12 @@ class Registerscreen extends StatelessWidget {
                       ),
                       onPressed: () {
                         if (formKey.currentState!.validate()) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const Loginscreen()),
-                          );
+                          // Navigator.push(
+                          //   context,
+                          //   MaterialPageRoute(
+                          //       builder: (_) => const Loginscreen()),
+                          // );
+                          _register(context);
                         }
                       },
                       child: const Text(

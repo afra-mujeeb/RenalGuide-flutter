@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:renalguide/Caretaker/register.dart';
 
 class Loginscreen extends StatefulWidget {
   const Loginscreen({super.key});
@@ -163,7 +164,7 @@ class _LoginscreenState extends State<Loginscreen> {
                   Center(
                     child: TextButton(
                       onPressed: () {
-                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => Registerscreen()),);
                       },
                       child: const Text(
                         "Don't have an account? Register",
