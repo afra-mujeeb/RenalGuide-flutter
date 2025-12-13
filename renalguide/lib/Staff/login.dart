@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:renalguide/Caretaker/Caretakerhome.dart';
+import 'package:renalguide/Caretaker/register.dart';
+import 'package:renalguide/Staff/Staffhome.dart';
+
+int? lid;
+String? usertype;
 
 class Loginscreen extends StatefulWidget {
   const Loginscreen({super.key});
@@ -14,10 +20,52 @@ class _LoginscreenState extends State<Loginscreen> {
 
   bool hidePassword = true;
 
+  Future<void> _login(context) async {
+    Map<String, dynamic> data = {
+      'username': username.text,
+      'password': password.text,
+    };
+    try {
+      final response = await dio.post('$baseurl/LoginPage_api', data: data);
+      print('========================>>>>>>>>>>${response.data}');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        lid = response.data['login_id'];
+        usertype = response.data['UserType'];
+        print('========================>>>>>>>>>>$usertype');
+
+        if (usertype == 'Caretaker') {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => HomePage()),
+            (route) => false,
+          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Login successful')));
+        } else if (usertype == 'Staff') {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => StaffHomePage()),
+            (route) => false,
+          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Login successful')));
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Login failed')));
+        }
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FFF9),  // 🌿 Updated background color
+      backgroundColor: const Color(0xFFF9FFF9),
 
       body: Center(
         child: SingleChildScrollView(
@@ -42,23 +90,16 @@ class _LoginscreenState extends State<Loginscreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   const Text(
                     "Welcome Back",
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                   ),
 
                   const SizedBox(height: 5),
 
                   const Text(
                     "Please log in to continue",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
                   ),
 
                   const SizedBox(height: 25),
@@ -131,10 +172,7 @@ class _LoginscreenState extends State<Loginscreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF2E7D32),
-                          Color(0xFF1B5E20),
-                        ],
+                        colors: [Color(0xFF2E7D32), Color(0xFF1B5E20)],
                       ),
                     ),
                     child: ElevatedButton(
@@ -145,7 +183,9 @@ class _LoginscreenState extends State<Loginscreen> {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       onPressed: () {
-                        if (formKey.currentState!.validate()) {}
+                        if (formKey.currentState!.validate()) {
+                          _login(context);
+                        }
                       },
                       child: const Text(
                         "Login",
@@ -163,7 +203,12 @@ class _LoginscreenState extends State<Loginscreen> {
                   Center(
                     child: TextButton(
                       onPressed: () {
-                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => Registerscreen(),
+                          ),
+                        );
                       },
                       child: const Text(
                         "Don't have an account? Register",
@@ -173,7 +218,7 @@ class _LoginscreenState extends State<Loginscreen> {
                         ),
                       ),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),

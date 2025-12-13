@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:renalguide/Caretaker/login.dart';
+import 'package:renalguide/Staff/login.dart';
+
 
 class Registerstaffscreen extends StatelessWidget {
   const Registerstaffscreen({super.key});

@@ -25,7 +25,7 @@
 //         ),
 //         actions: [
 //           ElevatedButton(onPressed: () {
-            
+
 //           }, child: Text('Add new patient'))
 //         ],
 //         backgroundColor: const Color(0xFF2E7D32),
@@ -126,9 +126,10 @@
 //   }
 // }
 
-
 import 'package:flutter/material.dart';
 import 'package:renalguide/Caretaker/AddPatient.dart';
+import 'package:renalguide/Caretaker/register.dart';
+import 'package:renalguide/Staff/login.dart';
 
 class CaretakerPatientPage extends StatefulWidget {
   const CaretakerPatientPage({super.key});
@@ -138,7 +139,49 @@ class CaretakerPatientPage extends StatefulWidget {
 }
 
 class _CaretakerPatientPageState extends State<CaretakerPatientPage> {
-  Map<String, String>? patient;
+  List<Map<String, dynamic>> patient = [];
+  bool isloading = true;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _Viewpatient();
+  }
+
+  Future<void> _Viewpatient() async {
+    try {
+      final response = await dio.get("$baseurl/ViewPatientAPI/$lid");
+      print("+++++++++++++, ${response.data}");
+
+      if (response.statusCode == 200 && response.data is List) {
+        setState(() {
+          patient = List<Map<String, dynamic>>.from(response.data);
+          isloading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => isloading = false);
+      print("Error loading patients: $e");
+    }
+  }
+
+  Future<void> deletepatient(int id) async {
+    try {
+      final response = await dio.get("$baseurl/Deletepatient/$id");
+      print(response.data);
+      if (response.statusCode==200) {
+        ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Patient deleted successfully")));
+      }
+    _Viewpatient();
+      
+    } catch (e) {
+      setState(() => isloading = false);
+      print("Error loading patients: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -154,7 +197,9 @@ class _CaretakerPatientPageState extends State<CaretakerPatientPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: patient == null
+        child: isloading
+            ? const Center(child: CircularProgressIndicator())
+            : patient.isEmpty
             ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -168,17 +213,22 @@ class _CaretakerPatientPageState extends State<CaretakerPatientPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2E7D32),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 30, vertical: 14),
+                          horizontal: 30,
+                          vertical: 14,
+                        ),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       onPressed: () async {
-                        final newPatient = await Navigator.push<Map<String, String>>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AddPatientPage(),
-                          ),
-                        );
+                        final newPatient =
+                            await Navigator.push<List<Map<String, dynamic>>>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AddPatientPage(),
+                              ),
+                            );
+                        _Viewpatient();
                         if (newPatient != null) {
                           setState(() {
                             patient = newPatient;
@@ -188,92 +238,115 @@ class _CaretakerPatientPageState extends State<CaretakerPatientPage> {
                       child: const Text(
                         'Add Patient',
                         style: TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    )
+                    ),
                   ],
                 ),
               )
-            : Card(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-                elevation: 5,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        patient!['name']!,
-                        style: const TextStyle(
-                            fontSize: 22, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 10),
-                      Text('Age: ${patient!['age']}'),
-                      const SizedBox(height: 5),
-                      Text('Sex: ${patient!['sex']}'),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+            : ListView.builder(
+                itemCount: patient.length,
+                itemBuilder: (context, index) {
+                  final p = patient[index];
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 5,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                          Text(
+                            p['name'] ?? '',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
                             ),
-                            onPressed: () {
-                              _showEditDialog();
-                            },
-                            icon: const Icon(Icons.edit, size: 18),
-                            label: const Text('Edit'),
                           ),
-                          const SizedBox(width: 20),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                patient = null;
-                              });
-                            },
-                            icon: const Icon(Icons.delete, size: 18),
-                            label: const Text('Delete'),
+                          const SizedBox(height: 8),
+                          Text('Age: ${p['age'] ?? 'N/A'}'),
+                          Text('Sex: ${p['sex'] ?? 'N/A'}'),
+                          Text('Blood group: ${p['bloodgroup'] ?? 'N/A'}'),
+                          Text('Diagnosis: ${p['diagnosis'] ?? 'N/A'}'),
+
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.edit,
+                                  color: Colors.blue,
+                                ),
+                                onPressed: () {
+                                  _showEditDialog(index);
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () {
+                                  deletepatient(p["id"]);
+                                },
+                              ),
+                            ],
                           ),
                         ],
-                      )
-                    ],
-                  ),
-                ),
+                      ),
+                    ),
+                  );
+                },
               ),
       ),
     );
   }
 
-  void _showEditDialog() {
-    final nameController =
-        TextEditingController(text: patient!['name'] ?? '');
-    final ageController = TextEditingController(text: patient!['age'] ?? '');
-    final sexController = TextEditingController(text: patient!['sex'] ?? '');
+  void _showEditDialog(int index) {
+    final p = patient[index];
+
+    final nameController = TextEditingController(text: p['name']);
+    final ageController = TextEditingController(text: p['age'].toString());
+    final sexController = TextEditingController(text: p['sex']);
+    final bloodgroupController = TextEditingController(text: p['bloodgroup']);
+    final diagnosisController = TextEditingController(text: p['diagnosis']);
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Edit Patient'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name')),
-            TextField(controller: ageController, decoration: const InputDecoration(labelText: 'Age'), keyboardType: TextInputType.number),
-            TextField(controller: sexController, decoration: const InputDecoration(labelText: 'Sex')),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              TextField(
+                controller: ageController,
+                decoration: const InputDecoration(labelText: 'Age'),
+              ),
+              TextField(
+                controller: sexController,
+                decoration: const InputDecoration(labelText: 'Sex'),
+              ),
+              TextField(
+                controller: bloodgroupController,
+                decoration: const InputDecoration(labelText: 'Blood Group'),
+              ),
+              TextField(
+                controller: diagnosisController,
+                decoration: const InputDecoration(labelText: 'Diagnosis'),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -286,22 +359,20 @@ class _CaretakerPatientPageState extends State<CaretakerPatientPage> {
             ),
             onPressed: () {
               setState(() {
-                patient = {
+                patient[index] = {
                   'name': nameController.text,
                   'age': ageController.text,
                   'sex': sexController.text,
+                  'bloodgroup': bloodgroupController.text,
+                  'diagnosis': diagnosisController.text,
                 };
               });
               Navigator.pop(context);
             },
-            child: const Text(
-              'Save',
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text('Save', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 }
-

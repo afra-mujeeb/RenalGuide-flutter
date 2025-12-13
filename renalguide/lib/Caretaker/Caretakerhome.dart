@@ -6,10 +6,36 @@ import 'package:renalguide/Caretaker/Viewpatient.dart';
 import 'package:renalguide/Caretaker/Viewprescription.dart';
 import 'package:renalguide/Caretaker/Viewslots.dart';
 import 'package:renalguide/Caretaker/caretakerprofile.dart';
+import 'package:renalguide/Caretaker/register.dart';
+import 'package:renalguide/Staff/login.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  Map<String, dynamic>? patient;
+  bool isloading=true;
+
+ Future<void>_HomePage() async {
+  try{
+
+    final response = await dio.get("$baseurl/ViewPatientAPI/$lid");
+    isloading=true;
+    print(response.data);
+    if(response.statusCode==200) {
+      setState(() {
+        patient = Map<String,dynamic>.from(response.data);
+        isloading=false;
+      });
+    }
+  } catch (e) {
+    print("Error loading patients: $e");
+  }
+} 
   @override
   Widget build(BuildContext context) {
     // Example dialysis data

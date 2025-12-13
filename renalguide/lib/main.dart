@@ -9,13 +9,13 @@ import 'package:renalguide/Caretaker/Viewpatient.dart';
 import 'package:renalguide/Caretaker/Viewprescription.dart';
 import 'package:renalguide/Caretaker/Viewslots.dart';
 import 'package:renalguide/Caretaker/caretakerprofile.dart';
-import 'package:renalguide/Caretaker/login.dart';
 import 'package:renalguide/Caretaker/register.dart';
 import 'package:renalguide/Staff/Adddialysiscount.dart';
 import 'package:renalguide/Staff/Profile.dart';
 import 'package:renalguide/Staff/Staffhome.dart';
 
 import 'package:renalguide/Staff/Viewparameters.dart';
+import 'package:renalguide/Staff/login.dart';
 import 'package:renalguide/Staff/parameter_form.dart';
 import 'package:renalguide/Staff/registerstaff.dart';
 import 'package:renalguide/Staff/viewallpatients.dart';
