@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:renalguide/Caretaker/AddPatient.dart';
+import 'package:renalguide/Caretaker/AddPatientrecords.dart';
 import 'package:renalguide/Caretaker/Bookinghistory.dart';
 import 'package:renalguide/Caretaker/Caretakerhome.dart';
 import 'package:renalguide/Caretaker/Chatwithdoctor.dart';
@@ -19,6 +20,7 @@ import 'package:renalguide/Staff/login.dart';
 import 'package:renalguide/Staff/parameter_form.dart';
 import 'package:renalguide/Staff/registerstaff.dart';
 import 'package:renalguide/Staff/viewallpatients.dart';
+
 
 void main() {
   runApp(const MyApp());

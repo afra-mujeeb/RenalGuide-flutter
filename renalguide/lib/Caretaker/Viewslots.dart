@@ -402,7 +402,7 @@ class _BookingPageState extends State<BookingPage> {
                                 isBooked ? "Booked" : time,
                                 style: TextStyle(
                                   color:
-                                      isBooked ? Colors.white : Colors.black,
+                                      isBooked ? const Color.fromARGB(255, 49, 47, 47) : Colors.black,
                                 ),
                               ),
                               selected: selectedTime == time,

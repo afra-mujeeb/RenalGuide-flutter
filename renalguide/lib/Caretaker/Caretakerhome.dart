@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:renalguide/Caretaker/AddPatientrecords.dart';
 import 'package:renalguide/Caretaker/Chatwithdoctor.dart';
 import 'package:renalguide/Caretaker/Doctorbooking.dart';
 import 'package:renalguide/Caretaker/Doctorbookinghistory.dart';
 import 'package:renalguide/Caretaker/Viewpatient.dart';
 import 'package:renalguide/Caretaker/Viewprescription.dart';
+import 'package:renalguide/Caretaker/Viewslothistory.dart';
 import 'package:renalguide/Caretaker/Viewslots.dart';
 import 'package:renalguide/Caretaker/caretakerprofile.dart';
 import 'package:renalguide/Caretaker/register.dart';
@@ -123,6 +125,13 @@ class _HomePageState extends State<HomePage> {
                     onTap: () {Navigator.push(context, MaterialPageRoute(builder: (context) => BookingPage(),));},
                     colors: [Color(0xFF4DB6AC), Color(0xFF2E7D32)],
                   ),
+                   buildGradientButton(
+                    context,
+                    icon: Icons.schedule,
+                    label: "View Slot History",
+                    onTap: () {Navigator.push(context, MaterialPageRoute(builder: (context) => ViewSlotHistoryScreen(),));},
+                    colors: [Color(0xFF4DB6AC), Color(0xFF2E7D32)],
+                  ),
                   buildGradientButton(
                     context,
                     icon: Icons.schedule,
@@ -157,6 +166,13 @@ class _HomePageState extends State<HomePage> {
                     label: "View Profile",
                     onTap: () {Navigator.push(context, MaterialPageRoute(builder: (context) => CaretakerProfilePage(),));},
                     colors: [Color(0xFFFFB74D), Color(0xFF2E7D32)],
+                  ),
+                   buildGradientButton(
+                    context,
+                    icon: Icons.schedule,
+                    label: "Add Patient Records",
+                    onTap: () {Navigator.push(context, MaterialPageRoute(builder: (context) => AddPatientRecordsPage(),));},
+                    colors: [Color(0xFF4DB6AC), Color(0xFF2E7D32)],
                   ),
                 ],
               ),
