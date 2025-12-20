@@ -13,15 +13,39 @@ class _AddPatientRecordsPageState extends State<AddPatientRecordsPage> {
   final ImagePicker _picker = ImagePicker();
   List<File> selectedImages = [];
 
-  // PICK MULTIPLE IMAGES
+  // Form controllers
+  final TextEditingController _doctorNameController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  DateTime? _selectedDate;
+
   Future<void> pickImages() async {
     final List<XFile>? images = await _picker.pickMultiImage();
-
     if (images != null && images.isNotEmpty) {
       setState(() {
         selectedImages.addAll(images.map((e) => File(e.path)));
       });
     }
+  }
+
+  Future<void> pickDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _doctorNameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
   }
 
   @override
@@ -36,12 +60,65 @@ class _AddPatientRecordsPageState extends State<AddPatientRecordsPage> {
         ),
         centerTitle: true,
       ),
-
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Doctor Name
+            TextField(
+              controller: _doctorNameController,
+              decoration: InputDecoration(
+                labelText: "Doctor Name",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                prefixIcon: const Icon(Icons.person, color: Color(0xFF2E7D32)),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Date of Previous Consultation
+            GestureDetector(
+              onTap: pickDate,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF2E7D32), width: 2),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _selectedDate == null
+                          ? "Select Date of Consultation"
+                          : "${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}",
+                      style: TextStyle(
+                        color: _selectedDate == null ? Colors.grey : Colors.black,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const Icon(Icons.calendar_today, color: Color(0xFF2E7D32)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Description
+            TextField(
+              controller: _descriptionController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: "Description / Notes",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                prefixIcon: const Icon(Icons.description, color: Color(0xFF2E7D32)),
+              ),
+            ),
+            const SizedBox(height: 16),
 
             const Text(
               "Upload Previous Medical Records",
@@ -64,8 +141,7 @@ class _AddPatientRecordsPageState extends State<AddPatientRecordsPage> {
                 ),
                 child: Column(
                   children: const [
-                    Icon(Icons.upload_file,
-                        size: 40, color: Color(0xFF2E7D32)),
+                    Icon(Icons.upload_file, size: 40, color: Color(0xFF2E7D32)),
                     SizedBox(height: 6),
                     Text(
                       "Tap to upload images",
@@ -78,11 +154,11 @@ class _AddPatientRecordsPageState extends State<AddPatientRecordsPage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
 
-            // IMAGE PREVIEW GRID
-            Expanded(
+            // IMAGE PREVIEW GRID inside fixed-height container
+            Container(
+              height: 250, // adjust height to avoid overflow
               child: selectedImages.isEmpty
                   ? const Center(
                       child: Text(
@@ -92,8 +168,7 @@ class _AddPatientRecordsPageState extends State<AddPatientRecordsPage> {
                     )
                   : GridView.builder(
                       itemCount: selectedImages.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
                         crossAxisSpacing: 10,
                         mainAxisSpacing: 10,
@@ -110,8 +185,6 @@ class _AddPatientRecordsPageState extends State<AddPatientRecordsPage> {
                                 ),
                               ),
                             ),
-
-                            // REMOVE IMAGE
                             Positioned(
                               top: 6,
                               right: 6,
@@ -124,8 +197,7 @@ class _AddPatientRecordsPageState extends State<AddPatientRecordsPage> {
                                 child: const CircleAvatar(
                                   radius: 12,
                                   backgroundColor: Colors.red,
-                                  child: Icon(Icons.close,
-                                      size: 14, color: Colors.white),
+                                  child: Icon(Icons.close, size: 14, color: Colors.white),
                                 ),
                               ),
                             ),
@@ -148,10 +220,11 @@ class _AddPatientRecordsPageState extends State<AddPatientRecordsPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: selectedImages.isEmpty
+                onPressed: (_doctorNameController.text.isEmpty ||
+                        _selectedDate == null ||
+                        selectedImages.isEmpty)
                     ? null
                     : () {
-                        // 🔜 CONNECT API HERE
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text("Records saved successfully"),
