@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:renalguide/Caretaker/AddPatientrecords.dart';
 import 'package:renalguide/Caretaker/Chatwithdoctor.dart';
@@ -19,8 +20,38 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final Dio dio = Dio();
+
+  int completedDialysis = 0;
+
   Map<String, dynamic>? patient;
   bool isloading=true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchDialysisCount();
+  }
+
+  Future<void> fetchDialysisCount() async {
+    try {
+      final response = await dio.get(
+        "$baseurl/count/$lid",
+      );
+      print(response.data);
+
+      if (response.statusCode == 200) {
+        setState(() {
+          completedDialysis = response.data['count'];
+          isloading = false;
+        });
+      }
+    } catch (e) {
+      print("COUNT ERROR: $e");
+      setState(() => isloading = false);
+        
+    }
+  }
 
  Future<void>_HomePage() async {
   try{
