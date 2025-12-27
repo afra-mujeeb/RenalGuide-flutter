@@ -42,7 +42,7 @@ class _LoginscreenState extends State<Loginscreen> {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('Login successful')));
-        } else if (usertype == 'Staff') {
+        } else if (usertype == 'Nurse') {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => StaffHomePage()),

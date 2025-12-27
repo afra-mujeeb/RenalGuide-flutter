@@ -1,8 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:renalguide/Caretaker/register.dart';
 import 'parameter_form.dart';
 
 class ViewParametersScreen extends StatefulWidget {
-  const ViewParametersScreen({super.key});
+  final int patientId;
+  const ViewParametersScreen({super.key, required this.patientId});
 
   @override
   State<ViewParametersScreen> createState() => _ViewParametersScreenState();
@@ -10,7 +14,49 @@ class ViewParametersScreen extends StatefulWidget {
 
 class _ViewParametersScreenState extends State<ViewParametersScreen> {
   List<Map<String, dynamic>> entries = [];
+  bool loading = true;
 
+  @override
+  void initState() {
+    super.initState();
+    fetchParameters();
+  }
+
+  // ================= FETCH + MERGE API =================
+  Future<void> fetchParameters() async {
+    final res =
+        await http.get(Uri.parse("$baseurl/viewhd/${widget.patientId}"));
+        print(res.body);
+    if (res.statusCode == 200) {
+      final decoded = jsonDecode(res.body);
+
+      final List pre = decoded['pre_hd'] ?? [];
+      final List post = decoded['post_hd'] ?? [];
+
+      List<Map<String, dynamic>> combined = [];
+
+      for (int i = 0; i < pre.length; i++) {
+        final preMap = Map<String, dynamic>.from(pre[i]);
+        final postMap = i < post.length
+            ? Map<String, dynamic>.from(post[i])
+            : <String, dynamic>{};
+
+        combined.add({
+          ...preMap,
+          ...postMap,
+        });
+      }
+
+      setState(() {
+        entries = combined;
+        loading = false;
+      });
+    } else {
+      setState(() => loading = false);
+    }
+  }
+
+  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,145 +64,101 @@ class _ViewParametersScreenState extends State<ViewParametersScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF2E7D32),
         title: const Text(
-          "View Patient Parameters",
+          "Patient Parameters",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF2E7D32),
         child: const Icon(Icons.add, color: Colors.white),
         onPressed: () async {
-          final newEntry = await Navigator.push(
+          final ok = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const ParameterForm()),
+            MaterialPageRoute(
+              builder: (_) => ParameterForm(patientId: widget.patientId),
+            ),
           );
-          if (newEntry != null) {
-            setState(() {
-              entries.add(newEntry);
-            });
-          }
+          if (ok == true) fetchParameters();
         },
       ),
-      body: entries.isEmpty
-          ? const Center(
-              child: Text(
-                "No entries yet",
-                style: TextStyle(fontSize: 16),
-              ),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: entries.map((entry) {
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 5,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                "Date: ${entry['date']}",
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 16),
-                              ),
-                              Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit, color: Colors.blue),
-                                    onPressed: () async {
-                                      final updated = await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => ParameterForm(existing: entry),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : entries.isEmpty
+              ? const Center(child: Text("No records found"))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: entries.length,
+                  itemBuilder: (_, i) {
+                    final e = entries[i];
+                    return Card(
+                      elevation: 5,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20)),
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // ================= HEADER =================
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "Date: ${e['date']}",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.edit,
+                                      color: Colors.blue),
+                                  onPressed: () async {
+                                    final ok = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ParameterForm(
+                                          patientId: widget.patientId,
+                                          existing: e,
                                         ),
-                                      );
-                                      if (updated != null) {
-                                        setState(() {
-                                          final index = entries.indexOf(entry);
-                                          entries[index] = updated;
-                                        });
-                                      }
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) => AlertDialog(
-                                          title: const Text("Confirm Delete"),
-                                          content: const Text(
-                                              "Are you sure you want to delete this entry?"),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.pop(context),
-                                              child: const Text("Cancel"),
-                                            ),
-                                            TextButton(
-                                              onPressed: () {
-                                                setState(() {
-                                                  entries.remove(entry);
-                                                });
-                                                Navigator.pop(context);
-                                              },
-                                              child: const Text(
-                                                "Delete",
-                                                style: TextStyle(color: Colors.red),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          buildRow("HD No.", entry["hdNo"]),
-                          const SizedBox(height: 4),
-                          buildRow("Pre BP", entry["preBP"]),
-                          buildRow("Temp", entry["preTemp"]),
-                          buildRow("Weight", entry["preWt"]),
-                          buildRow("Weight Gain", entry["preGain"]),
-                          const SizedBox(height: 8),
-                          buildRow("Post BP", entry["postBP"]),
-                          buildRow("Weight", entry["postWt"]),
-                          buildRow("Weight Loss", entry["postLoss"]),
-                          const SizedBox(height: 8),
-                          buildRow("Next Appointment", entry["nextAppointment"]),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-    );
-  }
+                                      ),
+                                    );
+                                    if (ok == true) fetchParameters();
+                                  },
+                                ),
+                              ],
+                            ),
 
-  Widget buildRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Text(
-            "$label: ",
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          Text(value),
-        ],
-      ),
+                            const SizedBox(height: 8),
+                            Text("HD No: ${e['numberofHD']}"),
+
+                            const Divider(),
+
+                            // ================= PRE HD =================
+                            const Text("Pre HD",
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                            Text("BP: ${e['bloodpressure']}"),
+                            Text("Temperature: ${e['temperature']}"),
+                            Text("Weight: ${e['weight']}"),
+                            Text("Weight Gain: ${e['weightgain']}"),
+
+                            const Divider(),
+
+                            // ================= POST HD =================
+                            const Text("Post HD",
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                            Text("BP: ${e['bloodpressure']}"),
+                            Text("Weight: ${e['weight']}"),
+                            Text("Weight Loss: ${e['weightloss']}"),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }

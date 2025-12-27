@@ -77,6 +77,11 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFD6FFC1),
       appBar: AppBar(
+        actions: [
+          IconButton(onPressed: (){
+            Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => Loginscreen(),), (route)=>false);
+          }, icon: Icon(Icons.logout))
+        ],
         backgroundColor: const Color(0xFF2E7D32),
         title: const Text(
           "Dialysis Dashboard",

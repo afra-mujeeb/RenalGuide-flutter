@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:renalguide/Caretaker/register.dart';
+import 'package:renalguide/Staff/viewparameters.dart';
 import 'parameter_form.dart';
 import 'Adddialysiscount.dart';
+
 
 class PatientManagementPage extends StatefulWidget {
   const PatientManagementPage({super.key});
@@ -10,37 +14,50 @@ class PatientManagementPage extends StatefulWidget {
 }
 
 class _PatientManagementPageState extends State<PatientManagementPage> {
-  // Unified patient list
-  List<Map<String, dynamic>> patients = [
-    {
-      "name": "John Doe",
-      "hdNo": "HD001",
-      "date": "2025-12-01",
-      "preBP": "120/80",
-      "preTemp": "98.6",
-      "preWt": "70",
-      "preGain": "0.5",
-      "postBP": "118/78",
-      "postWt": "69.5",
-      "postLoss": "0.5",
-      "nextAppointment": "2025-12-03",
-      "completedDialysis": 5,
-    },
-    {
-      "name": "Jane Smith",
-      "hdNo": "HD002",
-      "date": "2025-12-02",
-      "preBP": "110/70",
-      "preTemp": "99.1",
-      "preWt": "65",
-      "preGain": "0.3",
-      "postBP": "108/68",
-      "postWt": "64.7",
-      "postLoss": "0.3",
-      "nextAppointment": "2025-12-04",
-      "completedDialysis": 3,
-    },
-  ];
+  final Dio dio = Dio();
+
+  bool isLoading = true;
+  int totalPatients = 0;
+  int totalDialysis = 0;
+
+  List<Map<String, dynamic>> patients = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchPatients();
+  }
+
+  Future<void> fetchPatients() async {
+    try {
+      final response = await dio.get("$baseurl/ViewAllPatient");
+      print(response.data);
+
+      setState(() {
+        totalPatients = response.data['patient_count'];
+        totalDialysis = response.data['total_dialysis_count'];
+
+        patients = List<Map<String, dynamic>>.from(
+          response.data['patients'].map((p) => {
+                "id": p['id'],
+                "name": p['name'] ?? "No name",
+                "age": p['age']?.toString() ?? "-",
+                "sex": p['sex'] ?? "-",
+                "diagnosis": p['diagnosis'] ?? "-",
+                "bloodgroup": p['bloodgroup'] ?? "-",
+                "completedDialysis": p['dialysis_count'] ?? 0,
+              }),
+        );
+
+        isLoading = false;
+      });
+    } catch (e) {
+      isLoading = false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to load patients")),
+      );
+    }
+  }
 
   void _updateDialysisCount(int index, int count) {
     setState(() {
@@ -48,132 +65,481 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
     });
   }
 
-  void _updatePatient(int index, Map<String, dynamic> updatedPatient) {
-    setState(() {
-      patients[index] = updatedPatient;
-    });
-  }
-
   void _deletePatient(int index) {
     setState(() {
       patients.removeAt(index);
+      totalPatients--;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFD6FFC1),
+      backgroundColor: const Color(0xFFF5F9F4),
       appBar: AppBar(
         backgroundColor: const Color(0xFF2E7D32),
         title: const Text(
           "Patient Management",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            color: Colors.white,
+          ),
         ),
         centerTitle: true,
+        elevation: 2,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: patients.length,
-        itemBuilder: (context, index) {
-          final patient = patients[index];
-          return GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ParameterForm(),)),
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2E7D32)),
               ),
-              color: Colors.white,
-              elevation: 5,
-              margin: const EdgeInsets.only(bottom: 16),
-              child: ListTile(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                leading: CircleAvatar(
-                  backgroundColor: const Color(0xFF2E7D32),
-                  child: Text(
-                    patient["name"][0],
-                    style: const TextStyle(color: Colors.white),
+            )
+          : Column(
+              children: [
+                // Stats Cards
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _statCard(
+                          title: "Total Patients",
+                          value: totalPatients.toString(),
+                          icon: Icons.group,
+                          color: Color(0xFF4CAF50),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _statCard(
+                          title: "Total Dialysis",
+                          value: totalDialysis.toString(),
+                          icon: Icons.medical_services,
+                          color: Color(0xFF2196F3),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                title: Text(
-                  patient["name"],
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: Color(0xFF2E7D32)),
+
+                // Patient List Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Patients (${patients.length})",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF2E7D32),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.refresh,
+                            color: Color(0xFF2E7D32)),
+                        onPressed: fetchPatients,
+                      ),
+                    ],
+                  ),
                 ),
-                subtitle: Text(
-                    "HD No: ${patient['hdNo']} • Completed Dialysis: ${patient['completedDialysis']}"),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Add dialysis count
-                    IconButton(
-                      icon: const Icon(Icons.add, color: Color(0xFF2E7D32)),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AddDialysisCountPage(
-                              onCountAdded: (count) =>
-                                  _updateDialysisCount(index, count),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    // Edit patient
-                    IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blue),
-                      onPressed: () async {
-                        final updatedPatient = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ParameterForm(existing: patient),
-                          ),
-                        );
-                        if (updatedPatient != null) {
-                          _updatePatient(index, updatedPatient);
-                        }
-                      },
-                    ),
-                    // Delete patient
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            title: const Text("Confirm Delete"),
-                            content: const Text(
-                                "Are you sure you want to delete this patient?"),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text("Cancel"),
+
+                // Patient List
+                Expanded(
+                  child: patients.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.people_outline,
+                                size: 80,
+                                color: Colors.grey[400],
                               ),
-                              TextButton(
-                                onPressed: () {
-                                  _deletePatient(index);
-                                  Navigator.pop(context);
-                                },
-                                child: const Text(
-                                  "Delete",
-                                  style: TextStyle(color: Colors.red),
+                              const SizedBox(height: 16),
+                              Text(
+                                "No patients found",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
                                 ),
                               ),
                             ],
                           ),
-                        );
-                      },
-                    ),
-                  ],
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: patients.length,
+                          itemBuilder: (context, index) {
+                            final patient = patients[index];
+                            return _patientCard(patient, index);
+                          },
+                        ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _statCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 24,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _patientCard(Map<String, dynamic> patient, int index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Patient Info
+          ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            leading: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: const Color(0xFF2E7D32).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  patient["name"][0].toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2E7D32),
+                  ),
                 ),
               ),
             ),
-          );
-        },
+            title: Text(
+              patient["name"],
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    _infoChip(
+                      icon: Icons.calendar_today,
+                      text: "${patient["age"]} yrs",
+                    ),
+                    const SizedBox(width: 8),
+                    _infoChip(
+                      icon: Icons.people,
+                      text: patient["sex"],
+                    ),
+                    const SizedBox(width: 8),
+                    _infoChip(
+                      icon: Icons.bloodtype,
+                      text: patient["bloodgroup"],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Diagnosis: ${patient['diagnosis']}",
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.medical_services,
+                      size: 16,
+                      color: Color(0xFF2196F3),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      "Dialysis Count: ${patient['completedDialysis']}",
+                      style: const TextStyle(
+                        color: Color(0xFF2196F3),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Action Buttons
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                // View Parameters
+                _actionButton(
+                  icon: Icons.monitor_heart,
+                  label: "Parameters",
+                  color: Color(0xFF4CAF50),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ViewParametersScreen(patientId: patient['id'],),
+                      ),
+                    );
+                  },
+                ),
+
+                // Add Dialysis
+                _actionButton(
+                  icon: Icons.add_circle,
+                  label: "Add Count",
+                  color: Color(0xFF2196F3),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AddDialysisCountPage(
+                          onCountAdded: (count) =>
+                              _updateDialysisCount(index, count),
+                          patientId: patient['id'],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                // View Prescription
+                _actionButton(
+                  icon: Icons.medication,
+                  label: "Prescription",
+                  color: Color(0xFF9C27B0),
+                  onPressed: () {
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //     builder: (_) => ViewPrescriptionPage(
+                    //       patientId: patient['id'],
+                    //       patientName: patient['name'],
+                    //     ),
+                    //   ),
+                    // );
+                  },
+                ),
+
+                // Delete
+                _actionButton(
+                  icon: Icons.delete,
+                  label: "Delete",
+                  color: Colors.red,
+                  onPressed: () {
+                    _showDeleteDialog(index, patient["name"]);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoChip({required IconData icon, required String text}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 12,
+            color: Colors.grey[600],
+          ),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return Column(
+      children: [
+        IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 22,
+            ),
+          ),
+          onPressed: onPressed,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: color,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showDeleteDialog(int index, String patientName) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Delete Patient",
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Are you sure you want to delete $patientName?"),
+            const SizedBox(height: 8),
+            const Text(
+              "This action cannot be undone.",
+              style: TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ],
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              "Cancel",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _deletePatient(index);
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("$patientName deleted successfully"),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              "Delete",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
       ),
     );
   }
