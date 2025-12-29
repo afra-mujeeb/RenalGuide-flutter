@@ -18,7 +18,7 @@ import 'package:renalguide/Staff/Staffhome.dart';
 import 'package:renalguide/Staff/Viewparameters.dart';
 import 'package:renalguide/Staff/login.dart';
 import 'package:renalguide/Staff/parameter_form.dart';
-import 'package:renalguide/Staff/registerstaff.dart';
+
 import 'package:renalguide/Staff/viewallpatients.dart';
 
 
